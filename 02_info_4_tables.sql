@@ -1,0 +1,1 @@
+SELECT Customers.CustomerID, Customers.CustomerName, Orders.OrderID, Orders.TotalCost AS Cost, Menus.MenuName, MenuItems.CourseName FROM Customers INNER JOIN Orders USING (CustomerID) INNER JOIN Menus USING (MenuID) INNER JOIN MenuItems USING (MenuName) WHERE TotalCost > 150;
