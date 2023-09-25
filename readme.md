@@ -10,8 +10,3 @@ A .sql backup data-only file is provided also (without table fillings).
 Also a .pdf file as a reference is included, in case you want to see all the procedures and results in my machine, and a all in one document of all the tasks.
 
 The database password is: R0drig0# in case it is required.
-
-
-
-
-
