@@ -1,0 +1,244 @@
+01 Orders View
+--------------
+
+CREATE VIEW `OrdersView` AS SELECT OrderID, Quantity, TotalCost AS Cost FROM Orders WHERE Quantity > 2;
+
+mysql> SELECT * FROM OrdersView;
++---------+----------+--------+
+| OrderID | Quantity | Cost   |
++---------+----------+--------+
+|       5 |        4 | 291.20 |
+|       9 |        3 | 235.20 |
++---------+----------+--------+
+2 rows in set (0,00 sec)
+
+
+
+
+02  Little Lemon need information from four tables on all customers with orders that cost more than $150 ..... The result set should be sorted by the lowest cost amount.
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+mysql> SELECT Customers.CustomerID, Customers.CustomerName, Orders.OrderID, Orders.TotalCost AS Cost, Menus.MenuName, MenuItems.CourseName 
+FROM Customers INNER JOIN Orders USING (CustomerID) 
+INNER JOIN Menus USING (MenuID) INNER JOIN MenuItems USING (MenuName) WHERE TotalCost > 150 ORDER BY Cost ASC;
++------------+-----------------+---------+--------+-------------+------------+
+| CustomerID | CustomerName    | OrderID | Cost   | MenuName    | CourseName |
++------------+-----------------+---------+--------+-------------+------------+
+|         19 | Sophie Baker    |       6 | 151.20 | Alahamaha   | Kebab      |
+|         11 | Daniel Thompson |      11 | 169.40 | SeattleWink | Steak      |
+|         21 | Olivia Garcia   |       9 | 235.20 | Cappone     | Pizza      |
+|          2 | Maria Rodriguez |       5 | 291.20 | Yosemite    | Steak      |
+|          5 | Sarah Johnson   |       2 | 341.60 | Harakara    | Sushi      |
++------------+-----------------+---------+--------+-------------+------------+
+5 rows in set (0,00 sec)
+
+
+
+
+03 Little Lemon need you to find all menu items for which more than 2 orders have been placed. Use the "ANY" operator.
+----------------------------------------------------------------------------------------------------------------------
+
+mysql> SELECT MenuName FROM Menus WHERE MenuID = ANY (SELECT MenuID FROM Orders WHERE Quantity > 2);
++----------+
+| MenuName |
++----------+
+| Yosemite |
+| Cappone  |
++----------+
+2 rows in set (0,00 sec)
+
+
+
+
+04 Create a Stored Procedure that displays the maximum ordered quantity in the Orders table.
+--------------------------------------------------------------------------------------------
+
+mysql> DELIMITER //
+mysql> CREATE PROCEDURE GetMaxQuantity() BEGIN SELECT MAX(Quantity) AS 'Max Quantity in Order' FROM Orders;
+    -> END //
+Query OK, 0 rows affected (0,02 sec)
+
+mysql> CALL GetMaxQuantity();
++-----------------------+
+| Max Quantity in Order |
++-----------------------+
+|                     4 |
++-----------------------+
+1 row in set (0,00 sec)
+
+
+
+
+05 Prepared statement called GetOrderDetail
+-------------------------------------------
+
+mysql> PREPARE GetOrderDetail FROM 'SELECT OrderID, Quantity, TotalCost AS Cost FROM Orders WHERE OrderID = ?';
+Query OK, 0 rows affected (0,00 sec)
+Statement prepared
+
+mysql> SET @id=1;
+Query OK, 0 rows affected (0,00 sec)
+
+mysql> EXECUTE GetOrderDetail USING @id;
++---------+----------+--------+
+| OrderID | Quantity | Cost   |
++---------+----------+--------+
+|       1 |        1 | 100.80 |
++---------+----------+--------+
+1 row in set (0,00 sec)
+
+
+
+
+06 Cancel Order
+---------------
+
+CREATE DEFINER=`admin1`@`%` PROCEDURE `CancelOrder`(IN o_id INT)
+BEGIN
+DECLARE msg VARCHAR(100);
+DELETE FROM Orders WHERE OrderID=o_id;
+SET msg = CONCAT('Order ',o_id, ' is cancelled');
+SELECT msg AS Confirmation;
+END
+
+mysql> Call CancelOrder(10);
++-----------------------+
+| Confirmation          |
++-----------------------+
+| Order 10 is cancelled |
++-----------------------+
+1 row in set (0,01 sec)
+
+
+
+
+
+07 Insert data in Bookings table
+--------------------------------
+
+INSERT INTO Bookings (BookingID, BookingDate, TableNumber, CustomerID) VALUES (1, '2022-10-10', 5, 1), (2, '2022-11-12', 3, 3), (3, '2022-10-11', 2, 2), (4, '2022-10-13', 2, 1);
+
+
+
+08 Create a Stored procedure called CheckBooking to check whether a table in the restaurant is already booked
+-------------------------------------------------------------------------------------------------------------
+
+CREATE PROCEDURE CheckBooking(IN book_date DATE, IN table_num INT)
+BEGIN
+    DECLARE msg VARCHAR(100);  
+    IF (SELECT COUNT(*) FROM Bookings WHERE BookingDate = book_date AND TableNumber = table_num) > 0 THEN
+        SET msg = CONCAT('Table ', table_num, ' is already booked');
+    ELSE
+        SET msg = CONCAT('Table ', table_num, ' is free! Booking set.');
+    END IF;
+    SELECT msg AS "Booking status";
+END;
+
+
+mysql> CALL CheckBooking('2022-11-12', 3);
++---------------------------+
+| Booking status            |
++---------------------------+
+| Table 3 is already booked |
++---------------------------+
+1 row in set (0,00 sec)
+
+Query OK, 0 rows affected (0,00 sec)
+
+
+
+mysql> CALL CheckBooking('2022-11-12', 5);
++-------------------------------+
+| Booking status                |
++-------------------------------+
+| Table 5 is free! Booking set. |
++-------------------------------+
+1 row in set (0,00 sec)
+
+Query OK, 0 rows affected (0,00 sec)
+
+
+
+
+09 Check Booking using Stored procedure and a Transaction
+---------------------------------------------------------
+For your third and final task, Little Lemon need to verify a booking, and decline any reservations for tables that are already booked under another name. 
+Implementing these steps requires a Stored Procedure and a Transaction.
+
+DELIMITER //
+CREATE PROCEDURE AddValidBooking(IN booking_date DATE, IN table_number INT, IN customer_id INT)
+BEGIN
+DECLARE msg VARCHAR(100);
+START TRANSACTION;
+INSERT INTO Bookings (BookingDate, TableNumber, CustomerID) VALUES (booking_date, table_number, customer_id);
+# comparator is > 1 because the new data is already inserted and if the data matches, we have 2 cases, not 1 
+IF (SELECT COUNT(*) FROM Bookings WHERE BookingDate = booking_date AND TableNumber = table_number) > 1 THEN
+        SET msg = CONCAT('Table ',table_number,' is already booked - booking cancelled');
+        ROLLBACK;
+ELSE
+        COMMIT;
+END IF;
+SELECT msg AS "Booking status";
+END; //
+DELIMITER ;
+
+
+Testing the script..........
+
+mysql> CALL AddValidBooking("2022-12-17", 1, 1);
++----------------+
+| Booking status |
++----------------+
+| NULL           |
++----------------+
+1 row in set (0,01 sec)
+
+Query OK, 0 rows affected (0,01 sec)
+
+
+
+...... so when repeating same reservation .....
+
+
+mysql> CALL AddValidBooking("2022-12-17", 1, 1);
++-----------------------------------------------+
+| Booking status                                |
++-----------------------------------------------+
+| Table 1 is already booked - booking cancelled |
++-----------------------------------------------+
+1 row in set (0,00 sec)
+
+Query OK, 0 rows affected (0,00 sec)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
