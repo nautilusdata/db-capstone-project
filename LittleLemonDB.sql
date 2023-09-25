@@ -1,3 +1,5 @@
+CREATE DATABASE  IF NOT EXISTS `LittleLemonDB` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `LittleLemonDB`;
 -- MySQL dump 10.13  Distrib 8.0.34, for Linux (x86_64)
 --
 -- Host: 127.0.0.1    Database: LittleLemonDB
@@ -32,7 +34,7 @@ CREATE TABLE `Bookings` (
   KEY `tablenumber_fk_idx` (`TableNumber`),
   CONSTRAINT `customerid_fk` FOREIGN KEY (`CustomerID`) REFERENCES `Customers` (`CustomerID`) ON DELETE CASCADE ON UPDATE CASCADE,
   CONSTRAINT `tablenumber_fk` FOREIGN KEY (`TableNumber`) REFERENCES `Staff` (`TableNumber`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=38 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -41,7 +43,7 @@ CREATE TABLE `Bookings` (
 
 LOCK TABLES `Bookings` WRITE;
 /*!40000 ALTER TABLE `Bookings` DISABLE KEYS */;
-INSERT INTO `Bookings` VALUES (1,'2022-10-10',5,1),(2,'2022-11-12',3,3),(3,'2022-10-11',2,2),(4,'2022-10-13',2,1),(11,'2022-12-17',1,1),(12,'2022-12-19',1,1);
+INSERT INTO `Bookings` VALUES (1,'2022-10-10',5,1),(2,'2022-11-12',3,3),(3,'2022-10-11',2,2),(4,'2022-10-13',2,1);
 /*!40000 ALTER TABLE `Bookings` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -208,7 +210,7 @@ CREATE TABLE `Orders` (
 
 LOCK TABLES `Orders` WRITE;
 /*!40000 ALTER TABLE `Orders` DISABLE KEYS */;
-INSERT INTO `Orders` VALUES (1,1,1,3,1,4,100.80),(2,2,4,4,2,5,341.60),(3,3,3,3,1,6,72.80),(4,4,3,3,1,8,93.80),(5,5,4,3,4,2,291.20),(6,6,1,1,1,19,151.20),(7,7,2,2,1,18,65.80),(8,8,4,3,1,20,109.20),(9,9,3,2,3,21,235.20);
+INSERT INTO `Orders` VALUES (1,1,1,3,1,4,100.80),(2,2,4,4,2,5,341.60),(3,3,3,3,1,6,72.80),(4,4,3,3,1,8,93.80),(5,5,4,3,4,2,291.20),(6,6,1,1,1,19,151.20),(7,7,2,2,1,18,65.80),(8,8,4,3,1,20,109.20),(9,9,3,2,3,21,235.20),(10,10,2,2,1,39,140.00),(11,11,1,3,1,11,169.40);
 /*!40000 ALTER TABLE `Orders` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -254,6 +256,107 @@ INSERT INTO `Staff` VALUES (1,1,'John Smith','Chief Waiter',3500.00),(2,2,'Ava W
 UNLOCK TABLES;
 
 --
+-- Dumping routines for database 'LittleLemonDB'
+--
+/*!50003 DROP PROCEDURE IF EXISTS `AddValidBooking` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`admin1`@`%` PROCEDURE `AddValidBooking`(IN booking_date DATE, IN table_number INT, IN customer_id INT)
+BEGIN
+	DECLARE msg VARCHAR(100);
+	START TRANSACTION;
+	INSERT INTO Bookings (BookingDate, TableNumber, CustomerID) VALUES (booking_date, table_number, customer_id);
+
+	IF (SELECT COUNT(*) FROM Bookings WHERE BookingDate = booking_date AND TableNumber = table_number) > 1 THEN
+		SET msg = CONCAT('Table ',table_number,' is already booked - booking cancelled');
+		ROLLBACK;
+	ELSE
+		COMMIT;
+	END IF;
+
+	SELECT * FROM Bookings; 
+	SELECT msg AS "Booking status";
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `CancelOrder` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`admin1`@`%` PROCEDURE `CancelOrder`(IN o_id INT)
+BEGIN
+DECLARE msg VARCHAR(100);
+DELETE FROM Orders WHERE OrderID=o_id;
+SET msg = CONCAT('Order ',o_id, ' is cancelled');
+SELECT msg AS Confirmation;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `CheckBooking` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`admin1`@`%` PROCEDURE `CheckBooking`(IN book_date DATE, IN table_num INT)
+BEGIN
+DECLARE msg VARCHAR(100);
+IF (SELECT COUNT(*) FROM Bookings WHERE BookingDate = book_date AND TableNumber = table_num) > 0 THEN
+SET msg = CONCAT('Table ', table_num, ' is already booked');
+ELSE
+SET msg = CONCAT('Table ', table_num, ' is free! Booking set.');
+END IF;
+
+SELECT msg AS "Booking status"; -- Return the message as "Booking status"
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `GetMaxQuantity` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`admin1`@`%` PROCEDURE `GetMaxQuantity`()
+BEGIN SELECT MAX(Quantity) AS 'Max Quantity in Order' FROM Orders;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+
+--
 -- Final view structure for view `OrdersView`
 --
 
@@ -280,4 +383,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-09-17  5:11:41
+-- Dump completed on 2023-09-24 21:42:01
